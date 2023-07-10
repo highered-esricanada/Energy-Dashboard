@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>UBC Engage Energy Dashboard</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://js.arcgis.com/4.22/esri/css/main.css">
+  <link href="bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/chart.js@3.7.1/dist/chart.js"></script>
+    <script src="index.umd.js"></script>
+  <script src="https://js.arcgis.com/4.22/"></script>
+
+  <script src="grayVectorTile.js"></script>
+  <script src="main.js"></script>
+
+  <script type="module" src="https://js.arcgis.com/calcite-components/1.0.0-beta.76/calcite.esm.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.0.0-beta.76/calcite.css" />
+</head>
+
+<body>
+  <nav class="nav nav-tabs">
+    <a id="details" class="nav-item nav-link active">Scenario Explorer</a>
+    <a id="split" class="nav-item nav-link">Scenario Comparison</a>
+    <a id="help" class="nav-item nav-link">Help</a>
+    <div id="gotoHub" class="esri-widget">
+      <calcite-button id="clear">View Site</calcite-button>
+    </div>
+  </nav>
+  <calcite-tooltip-manager id="tooltips">
+    <calcite-modal id="helpDialog" class="invisible" aria-labelledby="modal-title" active scale="l" width="s">
+      <div slot="header" id="modal-title">Energy Dashboard</div>
+      <div style="text-align:center" slot="content">Hold down the ALT key and drag to create a selection:<img
+          src="img/selection.gif" /></div>
+      <calcite-label slot="back" layout="inline">
+        <calcite-checkbox id="closeModal"></calcite-checkbox>Don't show again
+      </calcite-label>
+    </calcite-modal>
+    <div id="detailsView" class="container-fluid">
+
+      <div class="row">
+        <div class="col-md-2" id="info">
+          <h4> Scenario</h4>
+          <calcite-label id="changeCity">City
+            <calcite-select id="city" class="dropdownSelect" scale="m">
+              <calcite-option>Vancouver</calcite-option>
+              <calcite-option>Victoria</calcite-option>
+              <calcite-option>Prince George</calcite-option>
+            </calcite-select>
+          </calcite-label>
+          <calcite-label id="changeScenario">Growth Scenario
+            <calcite-select id="growth" class="dropdownSelect" scale="m">
+              <calcite-option>Baseline</calcite-option>
+              <calcite-option>Dispersed</calcite-option>
+              <calcite-option>Corridor</calcite-option>
+              <calcite-option>Transit-Oriented Development</calcite-option>
+            </calcite-select>
+          </calcite-label>
+          <calcite-label id="changeTheme">Theme
+            <calcite-select id="theme" class="dropdownSelect" scale="m">
+              <calcite-option>Land Use</calcite-option>global
+              <calcite-option>Dwelling Mix</calcite-option>
+              <calcite-option>Mobility</calcite-option>
+              <calcite-option>Proximity</calcite-option>
+              <calcite-option>Energy</calcite-option>
+              <calcite-option>Energy Use Intensity</calcite-option>
+              <calcite-option>Emissions</calcite-option>
+              <calcite-option>Emission Intensity</calcite-option>
+            </calcite-select>
+          </calcite-label>
+          <calcite-label id="proximityColour" class="invisible">Colour By
+            <calcite-select id="colourBy" class="dropdownSelect" scale="m">
+              <calcite-option>Proximity to Commercial</calcite-option>
+              <calcite-option>Proximity to Bike Network</calcite-option>
+              <calcite-option>Proximity to Civic</calcite-option>
+              <calcite-option>Proximity to Open Space</calcite-option>
+              <calcite-option>Proximity to Public Transit</calcite-option>
+            </calcite-select>
+          </calcite-label>
+          <calcite-label>Map View
+            <calcite-radio-group scale="m">
+              <calcite-radio-group-item id="2d" value="layers" checked>2D</calcite-radio-group-item>
+              <calcite-radio-group-item id="3d" value="data">3D</calcite-radio-group-item>
+            </calcite-radio-group>
+          </calcite-label>
+          <calcite-label>Legend</calcite-label>
+          <div id="landuseLegend" class="esri-legend__service" tabindex="0">
+            <h3 class="esri-widget__heading esri-legend__service-label">Parcels</h3>
+            <div class="esri-legend__layer">
+              <div class="esri-legend__layer-table esri-legend__layer-table--size-ramp">
+                <div class="esri-legend__layer-body">
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+                            <defs></defs>
+                            <g transform="matrix(1.125,0,0,1.125,12,12)">
+                              <path fill="rgba(200, 200, 200, 0.5)" fill-rule="evenodd" stroke="rgba(255, 255, 255, 1)"
+                                stroke-width="1.3333333333333333" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="esri-widget__heading esri-legend__service-label">Buildings and Parcels</h3>
+            <div class="esri-legend__layer">
+              <div class="esri-legend__layer-table esri-legend__layer-table--size-ramp">
+                <div class="esri-legend__layer-body">
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(255, 248, 165, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Single Family Detached (SFD)
+                    </div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(240, 220, 33, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Single Family Attached (SFA)
+                    </div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(164, 126, 0, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Multi Family Low-Rise (MFL)
+                    </div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(176, 173, 0, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Multi Family Mid-Rise (MFM)
+                    </div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(255, 127, 0, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Mixed Use (MX)</div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(128, 128, 128, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Industrial (IND)</div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(200, 90, 90, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Commercial (CM)</div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(100, 172, 190, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Civic (CV)</div>
+                  </div>
+                  <div class="esri-legend__layer-row">
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--symbols">
+                      <div class="esri-legend__symbol">
+                        <div style="opacity: 1;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                            <defs></defs>
+                            <g transform="matrix(1.100000023841858,0,0,1.100000023841858,11,11)">
+                              <path fill="rgba(180, 210, 180, 1)" fill-rule="evenodd" stroke="none" stroke-width="1"
+                                stroke-linecap="butt" stroke-linejoin="4" stroke-dasharray="none" stroke-miterlimit="4"
+                                d="M -10,-10 L 10,0 L 10,10 L -10,10 L -10,-10 Z"></path>
+                            </g>
+                          </svg></div>
+                      </div>
+                    </div>
+                    <div class="esri-legend__layer-cell esri-legend__layer-cell--info">Open Space (OS)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="legend" class="invisible"></div>
+        </div>
+        <div class="col-md-6" id="maps">
+          <div id="view1Div" class="mapContainer"></div>
+          <div id="resetCamera" class="esri-widget">
+            <calcite-button appearance="outline" id="clear">Reset Camera</calcite-button>
+          </div>
+          <div class="invisible" id="clearSelection" class="esri-widget">
+            <calcite-button appearance="outline" id="clear">Clear Selection</calcite-button>
+          </div>
+          <div id="form-group">
+            <div class="container" style="margin-top: -200px; padding-right: 34px;">
+              <div class="dateChange-leading" style="padding-left: 15px; margin-left:-15px;">2020</div>
+              <div class="dateChange-leading disabled">2030</div>
+              <div id="2040" class="dateChange-leading">2040</div>
+              <div id="2050" class="dateChange-ending disabled" style="padding-right: 15px; margin-right:-15px;">2050
+              </div>
+            </div>
+            <calcite-slider id="form-controls" max="2050" min="2020" scale="l" snap step="20"></calcite-slider>
+          </div>
+        </div>
+        <div class="col-md-4" id="stats">
+          <h3 id="graphTitle">Land Use (Total floor area)</h3>
+          <div class="chart-container">
+            <canvas id="proximity"></canvas>
+          </div>
+          <div id="metrics">
+            <div id="tile" class="container">
+
+              <div class="content-container">
+                <calcite-icon id="dwellingsIcon" icon="home" scale="l"></calcite-icon>
+                <div class="content">
+                  <div id="dwellingsHeading" class="heading"></div>
+                </div>
+              </div>
+            </div>
+            <div id="tile" class="container">
+
+              <div class="content-container" id="areaContainer">
+                <svg class="stacks invisible" version="1.1" id="Smoke" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 256 256" enable-background="new 0 0 256 256" xml:space="preserve"><path d="M220.37,102.96c1.66-4.58,2.5-9.39,2.5-14.34c0-23.29-18.95-42.24-42.24-42.24c-2.36,0-4.71,0.19-7.01,0.58 c-5.67-13.22-16.76-23.52-30.54-28.11C116.59,10.02,87.85,24.39,79,50.9c-0.06,0.16-0.11,0.33-0.17,0.49 c-7.15,2.98-12.97,8.1-16.84,14.46C46.56,63,30.46,68.32,19.83,80.13c-8.14,9.04-12.28,20.71-11.64,32.85 c0.63,12.14,5.96,23.31,14.99,31.45c2.91,2.62,6.09,4.83,9.5,6.6c-2.21,8.11-1.14,16.84,3.16,24.28 c4.26,7.37,11.13,12.65,19.35,14.85c2.75,0.74,5.54,1.1,8.31,1.1c5.52,0,10.97-1.45,15.88-4.28c3.85-2.23,7.22-5.3,9.88-8.98H137 c3.31,0,6-2.69,6-6s-2.69-6-6-6H86c-2.16,0-4.15,1.16-5.21,3.03c-1.8,3.15-4.43,5.83-7.41,7.56c-4.6,2.65-9.95,3.35-15.08,1.98 s-9.41-4.66-12.07-9.26c-3.34-5.79-3.545-12.817-0.56-18.81c0.872-1.75,0.927-3.81,0.247-5.25c-0.68-1.45-2.097-2.55-3.597-3.09 c-4.1-1.46-7.83-3.69-11.1-6.64c-6.66-6-10.58-14.22-11.05-23.17c-0.47-8.94,2.58-17.53,8.58-24.19c7.3-8.1,18.1-12.04,28.73-10.83 c-0.48,2.36-0.75,4.8-0.75,7.29c0,17.5,12.31,32.05,28.93,35.33C86.54,136.94,99.99,150,117,150h45c12.17,0,22.06,9.89,22.06,22.04 V178h12v-5.96c0-18.77-15.28-34.04-34.06-34.04h-45c-10.87,0-19.39-8.71-19.39-19.83v-3.55c0-3.23-2.55-5.88-5.77-6 c-12.96-0.48-23.11-11.02-23.11-24c0-10.55,6.76-19.76,16.82-22.91c1.99-0.63,3.51-2.24,4.02-4.26c0.22-0.88,0.5-1.82,0.82-2.77 c6.75-20.22,28.68-31.18,48.9-24.44c11.89,3.96,21.16,13.49,24.78,25.51c0.46,1.54,1.52,2.82,2.93,3.57 c1.42,0.75,3.08,0.91,4.61,0.42c2.89-0.9,5.93-1.36,9.02-1.36c16.68,0,30.24,13.56,30.24,30.24c0,2.78-0.37,5.5-1.1,8.12 c-4.54-1.79-9.49-2.77-14.7-2.77h-5.67c-5.54-14.74-21.4-23.38-37.09-19.53c-6.82,1.69-12.73,5.47-17.09,10.94 c-2.06,2.59-1.63,6.37,0.96,8.43c2.59,2.07,6.37,1.64,8.43-0.95c2.69-3.38,6.35-5.72,10.58-6.77 c10.48-2.57,21.132,3.852,23.67,14.35c0.921,3.81,3.328,5.53,6.2,5.53h10.01c16.22,0,28.93,13.63,28.93,31.03v41h12v-41 C236,123,229.94,110.77,220.37,102.96z M172.044,188.062L248,188v26h-12v24h-52v-24h-12L172.044,188.062z"/></svg>
+                <calcite-icon id="areaIcon" icon="person" scale="l"></calcite-icon>
+                <div class="content">
+                  <div id="areaHeading" class="heading"></div>
+                </div>
+              </div>
+            </div>
+            <div id="tile" class="container">
+
+              <div class="content-container">
+                <calcite-icon id="residentsIcon" icon="person" scale="l"></calcite-icon>
+                <div class="content">
+                  <div id="residentsHeading" class="heading"></div>
+                </div>
+              </div>
+            </div>
+            <div id="tile" class="container">
+
+              <div class="content-container" id="area2Container">
+                <svg class="stacks invisible" version="1.1" id="Smoke2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 256 256" enable-background="new 0 0 256 256" xml:space="preserve"><path d="M220.37,102.96c1.66-4.58,2.5-9.39,2.5-14.34c0-23.29-18.95-42.24-42.24-42.24c-2.36,0-4.71,0.19-7.01,0.58 c-5.67-13.22-16.76-23.52-30.54-28.11C116.59,10.02,87.85,24.39,79,50.9c-0.06,0.16-0.11,0.33-0.17,0.49 c-7.15,2.98-12.97,8.1-16.84,14.46C46.56,63,30.46,68.32,19.83,80.13c-8.14,9.04-12.28,20.71-11.64,32.85 c0.63,12.14,5.96,23.31,14.99,31.45c2.91,2.62,6.09,4.83,9.5,6.6c-2.21,8.11-1.14,16.84,3.16,24.28 c4.26,7.37,11.13,12.65,19.35,14.85c2.75,0.74,5.54,1.1,8.31,1.1c5.52,0,10.97-1.45,15.88-4.28c3.85-2.23,7.22-5.3,9.88-8.98H137 c3.31,0,6-2.69,6-6s-2.69-6-6-6H86c-2.16,0-4.15,1.16-5.21,3.03c-1.8,3.15-4.43,5.83-7.41,7.56c-4.6,2.65-9.95,3.35-15.08,1.98 s-9.41-4.66-12.07-9.26c-3.34-5.79-3.545-12.817-0.56-18.81c0.872-1.75,0.927-3.81,0.247-5.25c-0.68-1.45-2.097-2.55-3.597-3.09 c-4.1-1.46-7.83-3.69-11.1-6.64c-6.66-6-10.58-14.22-11.05-23.17c-0.47-8.94,2.58-17.53,8.58-24.19c7.3-8.1,18.1-12.04,28.73-10.83 c-0.48,2.36-0.75,4.8-0.75,7.29c0,17.5,12.31,32.05,28.93,35.33C86.54,136.94,99.99,150,117,150h45c12.17,0,22.06,9.89,22.06,22.04 V178h12v-5.96c0-18.77-15.28-34.04-34.06-34.04h-45c-10.87,0-19.39-8.71-19.39-19.83v-3.55c0-3.23-2.55-5.88-5.77-6 c-12.96-0.48-23.11-11.02-23.11-24c0-10.55,6.76-19.76,16.82-22.91c1.99-0.63,3.51-2.24,4.02-4.26c0.22-0.88,0.5-1.82,0.82-2.77 c6.75-20.22,28.68-31.18,48.9-24.44c11.89,3.96,21.16,13.49,24.78,25.51c0.46,1.54,1.52,2.82,2.93,3.57 c1.42,0.75,3.08,0.91,4.61,0.42c2.89-0.9,5.93-1.36,9.02-1.36c16.68,0,30.24,13.56,30.24,30.24c0,2.78-0.37,5.5-1.1,8.12 c-4.54-1.79-9.49-2.77-14.7-2.77h-5.67c-5.54-14.74-21.4-23.38-37.09-19.53c-6.82,1.69-12.73,5.47-17.09,10.94 c-2.06,2.59-1.63,6.37,0.96,8.43c2.59,2.07,6.37,1.64,8.43-0.95c2.69-3.38,6.35-5.72,10.58-6.77 c10.48-2.57,21.132,3.852,23.67,14.35c0.921,3.81,3.328,5.53,6.2,5.53h10.01c16.22,0,28.93,13.63,28.93,31.03v41h12v-41 C236,123,229.94,110.77,220.37,102.96z M172.044,188.062L248,188v26h-12v24h-52v-24h-12L172.044,188.062z"/></svg>
+                <calcite-icon id="area2Icon" icon="person" scale="l"></calcite-icon>
+                <div class="content">
+                  <div id="area2Heading" class="heading"></div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+          <div id="tileLogo" class="container" style="margin-top:-1.5%;">
+            <img src="img/esricanlogo.png" />
+          </div>
+          <div id="tileLogo" class="container">
+            <img src="img/elementslab.png " />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+ 
+    <div id="splitView" class="container-fluid invisible">
+      <div id="expCards"></div>
+    </div>
+    <div id="helpView" class="container-fluid invisible">
+      <div class="containerHelp">
+        <div id="ember260" class="bs-row row ember-view">
+          <div id="ember262" class="col-sm-12 ember-view">
+              <div id="ember263" class="markdown-card ember-view">
+                  <h2>Scenario Explorer</h2>
+                  <p>The Scenario Explorer tab allows you to investigate the modelled performance of a single scenario
+                      across various themes. The tab is composed of: a scenario panel that allows you to select the
+                      scenario or experiment of interest; a central map component; and an outputs panel summarizing the
+                      results generated for the given scenario through model simulations.<br></p>
+              </div>
+          </div>
+      </div>
+      <div id="ember265" class="bs-row row ember-view">
+          <div id="ember267" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember268" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/dropdown.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember270" class="col-sm-7 ember-view">
+              <div id="ember271" class="markdown-card ember-view">
+                  <p><br></p>
+                  <p>The&nbsp;<span style="font-weight: 700;">Scenario Panel</span>&nbsp;allows you to view the results of
+                      one of the experiments by specifying the modeled city and growth strategy. You can also control
+                      which theme results are shown in the map and summarized in the outputs panel. Note that the baseline
+                      scenario is not an option in the dropdown menu, but can be accessed by moving the time slider to the
+                      year 2020.&nbsp;<br></p>
+              </div>
+          </div>
+      </div>
+      <div id="ember273" class="bs-row row ember-view">
+          <div id="ember275" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember276" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/button4.jpg">
+                          <div style="text-align: left;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember278" class="col-sm-7 ember-view">
+              <div id="ember279" class="markdown-card ember-view">
+                  <p><span
+                          >The
+                      </span><b
+                          >Map
+                          View</b><span
+                          >&nbsp;</span><b
+                          >Setting
+                      </b><span
+                          >can
+                          be toggled between 2D (bird’s eye view) and 3D (rotatable). To rotate the map in 3D view, hold
+                          down the right-click and drag the mouse.&nbsp;</span><br></p>
+              </div>
+          </div>
+      </div>
+      <div id="ember281" class="bs-row row ember-view">
+          <div id="ember283" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember284" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/legened.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember325" class="col-sm-7 ember-view">  
+            <div id="ember326" class="markdown-card ember-view">  
+              The <strong>Legend</strong> in the panel indicates the theme attribute or range of values associated with each classification colour in the map.
+            </div>
+          </div>
+      </div>
+      <div id="ember289" class="bs-row row ember-view">
+          <div id="ember291" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember292" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/MapVieww2.png">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember294" class="col-sm-7 ember-view">
+              <div id="ember295" class="markdown-card ember-view"> The <strong>Map View</strong> is the central component
+                  of the Scenario Explorer tab, displaying the parcels and buildings layers for the selected scenario,
+                  with buildings symbolized based on the chosen theme.&nbsp;
+              </div>
+          </div>
+      </div>
+      <div id="ember297" class="bs-row row ember-view">
+          <div id="ember299" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember300" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/Select.png">
+                          <div style="text-align: left;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember302" class="col-sm-7 ember-view">
+              <div id="ember303" class="markdown-card ember-view"> The&nbsp;<span
+                      style="font-weight: 700;">Select</span>&nbsp;feature can be activated by holding down the Alt key
+                  and drawing an area of interest on the map, or by drawing directly on the screen for mobile users. This
+                  updates the output chart using only the data for the selected features in the area of interest.
+              </div>
+          </div>
+      </div>
+      <div id="ember305" class="bs-row row ember-view">
+          <div id="ember307" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember308" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/timeslide.png">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember310" class="col-sm-7 ember-view">
+              <div id="ember311" class="markdown-card ember-view"> The <strong>Time Slider</strong> can be repositioned to
+                  switch between the baseline year (2020) and the experimental year, which will vary depending on the city
+                  selected.
+              </div>
+          </div>
+      </div>
+      <div id="ember313" class="bs-row row ember-view">
+          <div id="ember315" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember316" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/output.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div id="ember318" class="col-sm-7 ember-view">
+              <div id="ember319" class="markdown-card ember-view"> The <strong>Outputs Panel</strong> presents the modeled
+                  outputs for the selected theme visually with a chart and relevant summary metrics. You can hover over an
+                  element in the chart to see the value being graphed.
+              </div>
+          </div>
+      </div>
+      <div id="ember321" class="bs-row row ember-view">
+          <div id="ember323" class="col-sm-12 ember-view">
+              <div id="ember324" class="markdown-card ember-view">
+                  <h2><span
+                          style="color: inherit; font-family: var(--fontsHeadingFamily),Avenir Next; font-size: var(--font-size-h2); background-color: initial;">Theme
+                          Charts</span><br></h2>
+                  <ul>
+                      <li><span
+                              >Land
+                              use mix and dwelling mix are presented as bar charts, where the height of each bar
+                              is proportional to amount of a specific land use/building type.&nbsp;</span></li>
+                      <li>Mobility mode is presented as a doughnut chart, where the percentage area is proportional to the
+                          percentage of all modes that each mode constitutes.</li>
+                      <li>The proximity chart shows the distances and distribution of distance values for all buildings in the scenario, for each category (e.g. distance to open space). The distances from every parcel are represented within the coloured "violins". Mean is an open circle.</li>
+                      <li>Energy use data is presented as a stacked bar chart for future scenarios, where the length of each individual subcomponent in the bar is proportional to the quantity of energy consumed. "Tech Retrofit" refers to buildings that received replacement of existing technology in future years at the end of their lifespan; buildings selected for "Shell Retrofit" were assumed to comply with Step 2 requirements of the BC Step Code or requirements of the next higher Step if they already complied with Step 2 or higher; "New buildings" are assumed to meet the BC Energy Step Code.</li>
+                      <li>Annual emissions data is presented as a stacked bar chart for future scenarios, where the height of each individual subcomponent in the bar is proportional to the amount of greenhouse gas emissions produced.</li>
+                      <li>Energy use intensity and emission intensity are presented as bar charts, where the height of each bar is proportional to the average amount from a specific building type.</li>
+                  </ul>
+                  <div><br></div>
+              </div>
+          </div>
+      </div>
+      <div id="ember331" class="bs-row row ember-view">
+          <div id="ember333" class="col-sm-8 ember-view">
+              <div id="ember334" class="markdown-card ember-view">
+                  <h2>Scenario Comparison</h2>
+                  <p>The Scenario Comparison tab allows you to quickly compare the performance of different densification
+                      scenarios. The tab is composed of a series of scorecards summarizing the results of each experiment
+                      in terms of Land Use, Energy, Emissions, and Proximity.</p>
+                  <p><br></p>
+              </div>
+          </div>
+          <div id="ember336" class="col-sm-4 ember-view">
+              <div style="background-image:none;" id="ember337" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/vict.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div id="ember339" class="bs-row row ember-view">
+          <div id="ember341" class="col-sm-7 ember-view">
+              <div id="ember342" class="markdown-card ember-view"> The <strong>Density Map</strong>&nbsp;indicates where
+                  the population growth is located within this experiment. It relates to one of the five Growth Strategies
+                  (Prevailing Policy, Dispersed, Neighbourhood Center, Corridor, or Transit-Oriented Development).
+              </div>
+          </div>
+          <div id="ember344" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember345" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/img.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div id="ember347" class="bs-row row ember-view">
+          <div id="ember349" class="col-sm-7 ember-view">
+              <div id="ember350" class="markdown-card ember-view"> The <strong>Stacked Bar Charts</strong> display the
+                  shares of different Land Uses, Energy and Emission sources for each experiment.
+              </div>
+          </div>
+          <div id="ember352" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember353" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/landuse.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div id="ember355" class="bs-row row ember-view">
+          <div id="ember357" class="col-sm-7 ember-view">
+              <div id="ember358" class="markdown-card ember-view"> The <strong>Vertical Bar Charts</strong> represent the
+                  change from the baseline scenario in the percent of buildings that are within 400m of Open spaces, Civic
+                  spaces, Commercial spaces, Bike network, and Transit lines.
+              </div>
+          </div>
+          <div id="ember360" class="col-sm-5 ember-view">
+              <div style="background-image:none;" id="ember361" class="image-card calcite-web ember-view">
+                  <div class="card-base">
+                      <div class="card-image-wrap">
+                          <img class="card-image" alt=""
+                              src="img/help/change.jpg">
+                          <div style="text-align: center;" class="card-image-caption non-overlapping-caption hide">
+  
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+    </div>
+  
+    <calcite-tooltip label="scenario" reference-element="changeScenario" placement="left-trailing">Select the scenario
+      growth strategy</calcite-tooltip>
+    <calcite-tooltip label="toggle" placement="right-trailing" reference-element="2d">Toggles on 2D (bird's eye) view
+    </calcite-tooltip>
+    <calcite-tooltip label="toggle" placement="left-trailing" reference-element="3d">Toggles on 3D (rotatable) view
+    </calcite-tooltip>
+    <calcite-tooltip label="reset" reference-element="clearSelection">Resets the map data by removing the selected
+      area</calcite-tooltip>
+    <calcite-tooltip label="city" reference-element="changeCity" placement="left-trailing">Select the scenario city
+    </calcite-tooltip>
+    <calcite-tooltip label="toggle" reference-element="form-group">Reposition the slider to switch between the
+      baseline scenario (2020) and the experimental scenario year</calcite-tooltip>
+    <calcite-tooltip label="theme" placement="left-trailing" reference-element="changeTheme">Select a theme to explore
+      for the chosen scenario</calcite-tooltip>
+
+  </calcite-tooltip-manager>
+</body>
+
+</html>
